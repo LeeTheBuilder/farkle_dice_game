@@ -2,6 +2,14 @@
 
 Dependency-free local Farkle inspired by the core dice table rules in Kingdom Come: Deliverance 2.
 
+## Screenshots
+
+![Setup screen](assets/readme/setup.png)
+
+![Gameplay with selected dice](assets/readme/gameplay.png)
+
+![AI victory screen](assets/readme/victory.png)
+
 ## Play
 
 Open `index.html` in a browser:
