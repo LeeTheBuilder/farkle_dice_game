@@ -1,8 +1,8 @@
 {
-  "name": "farkle",
+  "name": "farkle_dice_game",
   "version": "1.0.0",
   "private": true,
-  "description": "Dependency-free local KCD2-style Farkle for two players.",
+  "description": "Beautiful dependency-free local KCD2-style Farkle dice game.",
   "scripts": {
     "test": "node --test"
   }

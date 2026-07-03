@@ -1,4 +1,4 @@
-# Tavern Farkle
+# farkle_dice_game
 
 Dependency-free local Farkle inspired by the core dice table rules in Kingdom Come: Deliverance 2.
 
@@ -7,7 +7,7 @@ Dependency-free local Farkle inspired by the core dice table rules in Kingdom Co
 Open `index.html` in a browser:
 
 ```sh
-open /Users/chenghao/projects/farkle/index.html
+open /Users/chenghao/projects/farkle_dice_game/index.html
 ```
 
 Choose either two-player hot-seat mode or a local AI opponent on the setup screen. The default target is 4,000 points, with quick and long match presets available.
@@ -36,6 +36,6 @@ Badges, loaded dice, wagers, and online multiplayer are intentionally out of sco
 ## Tests
 
 ```sh
-cd /Users/chenghao/projects/farkle
+cd /Users/chenghao/projects/farkle_dice_game
 npm test
 ```
