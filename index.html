@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tavern Farkle</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2318523d'/%3E%3Ccircle cx='20' cy='20' r='5' fill='%23f1cf78'/%3E%3Ccircle cx='44' cy='20' r='5' fill='%23f1cf78'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23f1cf78'/%3E%3Ccircle cx='20' cy='44' r='5' fill='%23f1cf78'/%3E%3Ccircle cx='44' cy='44' r='5' fill='%23f1cf78'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="setup-panel" id="setupPanel" aria-labelledby="setupTitle">
+        <div class="setup-copy">
+          <p class="eyebrow">Local hot-seat dice</p>
+          <h1 id="setupTitle">Tavern Farkle</h1>
+          <p class="setup-line">Core KCD2-style scoring for two players or a local AI opponent.</p>
+        </div>
+
+        <form class="setup-form" id="setupForm">
+          <fieldset class="mode-set">
+            <legend>Opponent</legend>
+            <div class="mode-options">
+              <label>
+                <input type="radio" name="opponentMode" value="human" checked>
+                <span>Two Players</span>
+              </label>
+              <label>
+                <input type="radio" name="opponentMode" value="ai">
+                <span>Play AI</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <label class="field-label">
+            Player one
+            <input id="playerOne" name="playerOne" type="text" value="Henry" maxlength="24" autocomplete="off">
+          </label>
+
+          <label class="field-label">
+            <span id="playerTwoLabelText">Player two</span>
+            <input id="playerTwo" name="playerTwo" type="text" value="Theresa" maxlength="24" autocomplete="off">
+          </label>
+
+          <fieldset class="target-set">
+            <legend>Target score</legend>
+            <div class="target-options">
+              <button type="button" data-target-choice="2000">Quick 2,000</button>
+              <button type="button" data-target-choice="4000" data-active="true">Table 4,000</button>
+              <button type="button" data-target-choice="10000">Long 10,000</button>
+            </div>
+            <label class="field-label compact">
+              Custom
+              <input id="targetScore" name="targetScore" type="number" value="4000" min="500" max="50000" step="50">
+            </label>
+          </fieldset>
+
+          <button class="primary-button start-button" type="submit">Start Match</button>
+        </form>
+      </section>
+
+      <section class="game-panel" id="gamePanel" hidden aria-label="Farkle table">
+        <header class="match-header">
+          <div>
+            <p class="eyebrow" id="matchTarget">First to 4,000</p>
+            <h1>Tavern Farkle</h1>
+          </div>
+          <div class="match-actions">
+            <div class="music-controls" aria-label="Music controls">
+              <button class="ghost-button music-button" id="musicButton" type="button" aria-pressed="false">Music Off</button>
+              <button class="ghost-button track-button" id="trackButton" type="button">Choose Track</button>
+              <input id="trackInput" type="file" accept="audio/*" hidden>
+              <span class="track-name" id="trackName">Generated loop</span>
+            </div>
+            <button class="ghost-button" id="newMatchButton" type="button">New Match</button>
+          </div>
+        </header>
+
+        <section class="scoreboard" id="scoreboard" aria-label="Scores"></section>
+
+        <section class="table-layout">
+          <aside class="ledger-panel" aria-label="Turn summary">
+            <div class="ledger-block">
+              <span>At table</span>
+              <strong id="currentPlayer">Player 1</strong>
+            </div>
+            <div class="ledger-grid">
+              <div>
+                <span>Turn</span>
+                <strong id="turnScore">0</strong>
+              </div>
+              <div>
+                <span>Selected</span>
+                <strong id="selectedScore">0</strong>
+              </div>
+              <div>
+                <span>If passed</span>
+                <strong id="passTotal">0</strong>
+              </div>
+              <div>
+                <span>Dice</span>
+                <strong id="diceCount">6</strong>
+              </div>
+              <div>
+                <span>Roll</span>
+                <strong id="rollNumber">1</strong>
+              </div>
+            </div>
+
+            <section class="scoring-panel" aria-label="Scoring reference">
+              <h2>Scoring</h2>
+              <dl>
+                <div><dt>Each 1</dt><dd>100</dd></div>
+                <div><dt>Each 5</dt><dd>50</dd></div>
+                <div><dt>Three 1s</dt><dd>1,000</dd></div>
+                <div><dt>Three 2s-6s</dt><dd>Face x 100</dd></div>
+                <div><dt>Extra matches</dt><dd>Double each die</dd></div>
+                <div><dt>Straight 1-5</dt><dd>500</dd></div>
+                <div><dt>Straight 2-6</dt><dd>750</dd></div>
+                <div><dt>Straight 1-6</dt><dd>1,500</dd></div>
+              </dl>
+            </section>
+          </aside>
+
+          <section class="felt-table" aria-label="Dice roll">
+            <div class="table-rail">
+              <p class="message-banner" id="messageBanner">Roll begins.</p>
+            </div>
+
+            <div class="dice-tray" id="diceTray" aria-live="polite"></div>
+
+            <p class="selection-note" id="selectionNote">Select scoring dice from this roll.</p>
+
+            <div class="action-bar">
+              <button class="action-button" id="continueButton" type="button">Score &amp; Continue</button>
+              <button class="primary-button" id="passButton" type="button">Score &amp; Pass</button>
+              <button class="action-button" id="nextPlayerButton" type="button" hidden>Next Player</button>
+            </div>
+
+            <section class="winner-panel" id="winnerPanel" hidden aria-live="polite">
+              <h2 id="winnerText">Winner</h2>
+            </section>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="./src/rules.js"></script>
+    <script src="./src/music.js"></script>
+    <script src="./src/app.js"></script>
+  </body>
+</html>
