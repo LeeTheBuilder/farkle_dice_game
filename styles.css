@@ -19,6 +19,8 @@
   --shadow: rgba(12, 8, 5, 0.42);
   --gold-shadow: rgba(241, 207, 120, 0.22);
   --radius: 8px;
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   color-scheme: light;
   font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   font-size: 16px;
@@ -599,6 +601,7 @@ h1 {
   gap: 18px;
   justify-content: center;
   align-content: center;
+  perspective: 760px;
 }
 
 .die {
@@ -611,8 +614,10 @@ h1 {
     radial-gradient(circle at 76% 78%, rgba(143, 51, 64, 0.12), transparent 34%),
     linear-gradient(145deg, #fff9df, #d4b46b);
   box-shadow: 0 18px 26px rgba(0, 0, 0, 0.36), inset 0 -6px 10px rgba(90, 53, 26, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.55);
-  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+  transform-origin: 50% 58%;
+  transition: transform 160ms var(--ease-out-quart), box-shadow 160ms var(--ease-out-quart), opacity 160ms var(--ease-out-quart);
   position: relative;
+  will-change: transform, opacity;
 }
 
 .die:hover:not(:disabled) {
@@ -630,6 +635,17 @@ h1 {
   filter: saturate(0.55);
 }
 
+.dice-tray[data-rolling="true"] .die {
+  opacity: 1;
+  filter: none;
+}
+
+.die[data-rolling="true"] {
+  animation: die-cast 560ms var(--ease-out-quint) both;
+  animation-delay: var(--roll-delay, 0ms);
+  box-shadow: 0 24px 34px rgba(0, 0, 0, 0.42), inset 0 -6px 12px rgba(90, 53, 26, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
 .die[data-selected="true"][data-playable="false"] {
   opacity: 1;
   filter: none;
@@ -639,6 +655,12 @@ h1 {
   display: block;
   position: absolute;
   inset: 14%;
+  transform-origin: center;
+}
+
+.die[data-rolling="true"] .die-face {
+  animation: pips-reveal 560ms var(--ease-out-quart) both;
+  animation-delay: var(--roll-delay, 0ms);
 }
 
 .pip {
@@ -716,6 +738,40 @@ h1 {
   font-size: 2rem;
 }
 
+@keyframes die-cast {
+  0% {
+    opacity: 0;
+    transform: translate3d(-22px, -30px, 0) rotateX(64deg) rotateZ(-32deg) scale(0.74);
+  }
+
+  42% {
+    opacity: 1;
+    transform: translate3d(10px, 6px, 0) rotateX(20deg) rotateZ(18deg) scale(1.04);
+  }
+
+  72% {
+    transform: translate3d(-3px, -2px, 0) rotateX(0deg) rotateZ(-5deg) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotateX(0deg) rotateZ(0deg) scale(1);
+  }
+}
+
+@keyframes pips-reveal {
+  0%,
+  48% {
+    opacity: 0;
+    transform: scale(0.68);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 920px) {
   .app-shell {
     width: min(100% - 20px, 720px);
@@ -737,6 +793,17 @@ h1 {
 
   .match-header h1 {
     font-size: 2.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

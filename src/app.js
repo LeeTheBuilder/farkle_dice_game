@@ -8,10 +8,16 @@
   const AI_PLAYER_INDEX = 1;
   const AI_PREVIEW_DELAY = 650;
   const AI_ACTION_DELAY = 850;
+  const ROLL_TUMBLE_MS = 560;
+  const ROLL_STAGGER_MS = 90;
+  const ROLL_SETTLE_MS = 160;
   let game = null;
   let matchMode = "human";
   let aiTimerId = null;
   let aiActionInFlight = false;
+  let activeRollKey = "";
+  let isRollAnimating = false;
+  let rollAnimationTimerId = null;
 
   const setupPanel = document.querySelector("#setupPanel");
   const gamePanel = document.querySelector("#gamePanel");
@@ -40,6 +46,9 @@
   const nextPlayerButton = document.querySelector("#nextPlayerButton");
   const winnerPanel = document.querySelector("#winnerPanel");
   const winnerText = document.querySelector("#winnerText");
+  const reducedMotionQuery = window.matchMedia
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : { matches: false };
 
   const pipLayouts = {
     1: ["center"],
@@ -82,6 +91,57 @@
       aiTimerId = null;
     }
     aiActionInFlight = false;
+  }
+
+  function getRollKey() {
+    if (!game || !game.dice.length) {
+      return "";
+    }
+
+    return `${game.activePlayerIndex}:${game.rollNumber}:${game.dice.map((die) => die.id).join("|")}`;
+  }
+
+  function clearRollAnimation(resetKey) {
+    if (rollAnimationTimerId) {
+      clearTimeout(rollAnimationTimerId);
+      rollAnimationTimerId = null;
+    }
+
+    isRollAnimating = false;
+
+    if (resetKey) {
+      activeRollKey = "";
+    }
+  }
+
+  function syncRollAnimation() {
+    const rollKey = getRollKey();
+
+    if (!rollKey) {
+      clearRollAnimation(true);
+      return;
+    }
+
+    if (rollKey === activeRollKey) {
+      return;
+    }
+
+    clearRollAnimation(false);
+    activeRollKey = rollKey;
+
+    if (reducedMotionQuery.matches || game.phase === Rules.PHASES.GAME_OVER) {
+      return;
+    }
+
+    isRollAnimating = true;
+    rollAnimationTimerId = setTimeout(() => {
+      rollAnimationTimerId = null;
+
+      if (getRollKey() === rollKey) {
+        isRollAnimating = false;
+        render();
+      }
+    }, ROLL_TUMBLE_MS + Math.max(0, game.dice.length - 1) * ROLL_STAGGER_MS + ROLL_SETTLE_MS);
   }
 
   function updateMusicButton() {
@@ -181,11 +241,13 @@
 
   function renderDice() {
     diceTray.innerHTML = "";
+    diceTray.dataset.rolling = "false";
 
     if (!game) {
       return;
     }
 
+    diceTray.dataset.rolling = String(isRollAnimating);
     const rollValues = getRollValues();
     const potentialIndexes = new Set(Rules.getPotentialScoringIndexes(rollValues));
     const aiTurn = isAiTurn();
@@ -193,7 +255,8 @@
     game.dice.forEach((die, index) => {
       const dieButton = document.createElement("button");
       const selected = selectedIndexes.has(index);
-      const playable = potentialIndexes.has(index) && game.phase === Rules.PHASES.SELECTING && !aiTurn;
+      const playable =
+        !isRollAnimating && potentialIndexes.has(index) && game.phase === Rules.PHASES.SELECTING && !aiTurn;
 
       dieButton.type = "button";
       dieButton.className = "die";
@@ -201,9 +264,14 @@
       dieButton.dataset.value = String(die.value);
       dieButton.dataset.selected = String(selected);
       dieButton.dataset.playable = String(playable);
+      dieButton.dataset.rolling = String(isRollAnimating);
       dieButton.disabled = !playable;
+      dieButton.style.setProperty("--roll-delay", `${index * ROLL_STAGGER_MS}ms`);
       dieButton.setAttribute("aria-pressed", String(selected));
-      dieButton.setAttribute("aria-label", `Die ${index + 1}, showing ${die.value}`);
+      dieButton.setAttribute(
+        "aria-label",
+        isRollAnimating ? `Die ${index + 1} rolling` : `Die ${index + 1}, showing ${die.value}`,
+      );
       dieButton.append(createPips(die.value));
 
       diceTray.append(dieButton);
@@ -233,7 +301,9 @@
     rollNumber.textContent = String(game.rollNumber);
     messageBanner.textContent = game.message;
 
-    if (game.phase === Rules.PHASES.BUST) {
+    if (isRollAnimating) {
+      selectionNote.textContent = "Dice are rolling...";
+    } else if (game.phase === Rules.PHASES.BUST) {
       selectionNote.textContent = `Lost turn points: ${formatScore(game.lostTurnScore)}.`;
     } else if (game.phase === Rules.PHASES.GAME_OVER) {
       selectionNote.textContent = "Match complete.";
@@ -252,11 +322,11 @@
 
   function renderActions(selection) {
     const aiTurn = isAiTurn();
-    const canScore = game.phase === Rules.PHASES.SELECTING && selection.valid && !aiTurn;
+    const canScore = !isRollAnimating && game.phase === Rules.PHASES.SELECTING && selection.valid && !aiTurn;
     continueButton.disabled = !canScore;
     passButton.disabled = !canScore;
-    nextPlayerButton.hidden = game.phase !== Rules.PHASES.BUST || aiTurn;
-    nextPlayerButton.disabled = game.phase !== Rules.PHASES.BUST || aiTurn;
+    nextPlayerButton.hidden = isRollAnimating || game.phase !== Rules.PHASES.BUST || aiTurn;
+    nextPlayerButton.disabled = isRollAnimating || game.phase !== Rules.PHASES.BUST || aiTurn;
 
     winnerPanel.hidden = game.phase !== Rules.PHASES.GAME_OVER;
     if (game.phase === Rules.PHASES.GAME_OVER) {
@@ -272,6 +342,7 @@
       return;
     }
 
+    syncRollAnimation();
     const selection = getSelection();
     renderScoreboard();
     renderDice();
@@ -284,6 +355,7 @@
   function startMatch(event) {
     event.preventDefault();
     clearAiTimer();
+    clearRollAnimation(true);
     clearSelection();
     matchMode = getSelectedMode();
 
@@ -300,6 +372,7 @@
 
   function resetMatch() {
     clearAiTimer();
+    clearRollAnimation(true);
     game = null;
     clearSelection();
     render();
@@ -383,7 +456,7 @@
   }
 
   function scheduleAiTurn() {
-    if (!isAiTurn() || aiTimerId || aiActionInFlight) {
+    if (isRollAnimating || !isAiTurn() || aiTimerId || aiActionInFlight) {
       return;
     }
 
@@ -456,6 +529,8 @@
   passButton.addEventListener("click", scorePass);
   nextPlayerButton.addEventListener("click", nextPlayer);
   window.addEventListener("beforeunload", () => {
+    clearRollAnimation(false);
+
     if (tavernMusic) {
       tavernMusic.stop();
     }
