@@ -20,7 +20,7 @@ open /Users/chenghao/projects/farkle_dice_game/index.html
 
 Choose either two-player hot-seat mode or a local AI opponent on the setup screen. The default target is 4,000 points, with quick and long match presets available.
 
-The AI is rule-based and runs entirely in the browser. It picks the highest-scoring legal dice from the current roll, presses low-value turns, and banks when the turn total is strong or enough to win.
+The AI is rule-based and runs entirely in the browser. It picks the highest-scoring legal dice from the current roll, presses low-value turns, and banks when the turn total is strong or enough to force the final response.
 
 The Music button starts an original browser-generated medieval-style loop with drone, plucked melody, and soft drum accents.
 
@@ -36,6 +36,8 @@ The Music button starts an original browser-generated medieval-style loop with d
 - Scoring sets must come from the current roll. Sets cannot be built across separate rolls.
 - A bust loses only the unbanked points from the current turn.
 - If every die from a roll is scored, the player can continue by rolling all six dice again.
+- Once the target score is reached, the round is completed so both players get the same number of turns.
+- The unique leader at the end of that round wins. If the table is tied, another full round starts.
 
 Badges, loaded dice, wagers, and online multiplayer are intentionally out of scope for this version.
 

@@ -65,6 +65,22 @@ test("AI banks immediately when the selection wins", () => {
   assert.equal(move.totalIfPassed, 1500);
 });
 
+test("AI presses a final response turn when banking would still lose", () => {
+  const game = Rules.createGame({
+    playerNames: ["Human", "Tavern AI"],
+    targetScore: 500,
+    rng: rngForDice([1, 2, 3, 4, 6, 6]),
+  });
+  game.activePlayerIndex = 1;
+  game.players[0].score = 1000;
+  game.players[1].score = 400;
+
+  const move = Rules.chooseAiMove(game);
+
+  assert.equal(move.action, "continue");
+  assert.equal(move.totalIfPassed, 500);
+});
+
 test("AI acknowledges a bust state", () => {
   const game = Rules.createGame({
     playerNames: ["Human", "Tavern AI"],

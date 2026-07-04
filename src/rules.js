@@ -395,12 +395,61 @@
     return state.dice.map((die) => die.value);
   }
 
+  function formatScore(value) {
+    return Number(value).toLocaleString("en-AU");
+  }
+
   function activePlayer(state) {
     return state.players[state.activePlayerIndex];
   }
 
   function switchPlayerIndex(index) {
     return index === 0 ? 1 : 0;
+  }
+
+  function hasTargetScore(players, targetScore) {
+    return players.some((player) => player.score >= targetScore);
+  }
+
+  function getLeaderIndex(players) {
+    if (players.length === 0) {
+      return null;
+    }
+
+    let leaderIndex = 0;
+    let tied = false;
+
+    for (let index = 1; index < players.length; index += 1) {
+      if (players[index].score > players[leaderIndex].score) {
+        leaderIndex = index;
+        tied = false;
+      } else if (players[index].score === players[leaderIndex].score) {
+        tied = true;
+      }
+    }
+
+    return tied ? null : leaderIndex;
+  }
+
+  function isEndOfRound(state, playerIndex) {
+    return playerIndex === state.players.length - 1;
+  }
+
+  function shouldCompleteMatch(state, players, playerIndex) {
+    return hasTargetScore(players, state.targetScore) && isEndOfRound(state, playerIndex) && getLeaderIndex(players) !== null;
+  }
+
+  function completeMatch(state, players, updates) {
+    const winnerIndex = getLeaderIndex(players);
+
+    return Object.assign({}, state, updates || {}, {
+      players,
+      phase: PHASES.GAME_OVER,
+      turnScore: 0,
+      winnerIndex,
+      lostTurnScore: 0,
+      message: `${players[winnerIndex].name} wins with ${formatScore(players[winnerIndex].score)} points.`,
+    });
   }
 
   function rollIntoState(state, count, rng, options) {
@@ -495,19 +544,15 @@
     const players = state.players.map((player) => Object.assign({}, player));
     players[state.activePlayerIndex].score += banked;
 
-    if (players[state.activePlayerIndex].score >= state.targetScore) {
-      return Object.assign({}, state, {
-        players,
-        phase: PHASES.GAME_OVER,
-        turnScore: 0,
-        winnerIndex: state.activePlayerIndex,
+    if (shouldCompleteMatch(state, players, state.activePlayerIndex)) {
+      return completeMatch(state, players, {
         lastBanked: banked,
-        lostTurnScore: 0,
-        message: `${players[state.activePlayerIndex].name} wins with ${players[state.activePlayerIndex].score} points.`,
       });
     }
 
     const nextActivePlayerIndex = switchPlayerIndex(state.activePlayerIndex);
+    const targetReached = hasTargetScore(players, state.targetScore);
+    const tiedAfterRound = targetReached && isEndOfRound(state, state.activePlayerIndex) && getLeaderIndex(players) === null;
     const nextState = Object.assign({}, state, {
       players,
       activePlayerIndex: nextActivePlayerIndex,
@@ -518,7 +563,11 @@
     });
 
     return rollIntoState(nextState, 6, rng || Math.random, {
-      message: `${players[switchPlayerIndex(nextActivePlayerIndex)].name} banks ${banked}. ${players[nextActivePlayerIndex].name} rolls.`,
+      message: tiedAfterRound
+        ? `${players[state.activePlayerIndex].name} banks ${formatScore(banked)}. The table is tied; another round begins.`
+        : targetReached
+          ? `${players[state.activePlayerIndex].name} banks ${formatScore(banked)}. ${players[nextActivePlayerIndex].name} gets the final turn.`
+          : `${players[state.activePlayerIndex].name} banks ${formatScore(banked)}. ${players[nextActivePlayerIndex].name} rolls.`,
     });
   }
 
@@ -527,7 +576,16 @@
       throw new Error("There is no bust to acknowledge.");
     }
 
+    if (shouldCompleteMatch(state, state.players, state.activePlayerIndex)) {
+      return completeMatch(state, state.players, {
+        lastBanked: 0,
+        lastRollWasHotDice: false,
+      });
+    }
+
     const nextActivePlayerIndex = switchPlayerIndex(state.activePlayerIndex);
+    const targetReached = hasTargetScore(state.players, state.targetScore);
+    const tiedAfterRound = targetReached && isEndOfRound(state, state.activePlayerIndex) && getLeaderIndex(state.players) === null;
     const nextState = Object.assign({}, state, {
       activePlayerIndex: nextActivePlayerIndex,
       turnScore: 0,
@@ -536,7 +594,11 @@
     });
 
     return rollIntoState(nextState, 6, rng || Math.random, {
-      message: `${state.players[nextActivePlayerIndex].name} rolls.`,
+      message: tiedAfterRound
+        ? `The table is tied; another round begins. ${state.players[nextActivePlayerIndex].name} rolls.`
+        : targetReached
+          ? `${state.players[nextActivePlayerIndex].name} gets the final turn.`
+          : `${state.players[nextActivePlayerIndex].name} rolls.`,
     });
   }
 
@@ -590,6 +652,7 @@
     const totalIfPassed = player.score + turnTotal;
     const usedAllDice = selection.selectedIndexes.length === state.dice.length;
     const nextDiceCount = usedAllDice ? 6 : state.dice.length - selection.selectedIndexes.length;
+    const finalResponseTurn = hasTargetScore(state.players, state.targetScore) && isEndOfRound(state, state.activePlayerIndex);
     let passThreshold = config.passThreshold;
 
     if (opponent.score - player.score >= config.trailingBoostAt) {
@@ -603,9 +666,18 @@
     let action = "continue";
     let reason = `Keeps ${selection.score} and presses the turn.`;
 
-    if (totalIfPassed >= state.targetScore) {
+    if (finalResponseTurn) {
+      if (totalIfPassed > opponent.score) {
+        action = "pass";
+        reason = "Banks enough to take the table.";
+      } else {
+        reason = "Needs more points to beat the leader.";
+      }
+    } else if (totalIfPassed >= state.targetScore) {
       action = "pass";
-      reason = "Banks enough to win.";
+      reason = isEndOfRound(state, state.activePlayerIndex)
+        ? "Banks enough to close the round."
+        : "Banks enough to trigger the final turn.";
     } else if (!usedAllDice && nextDiceCount <= 2 && turnTotal >= config.lowDicePassThreshold) {
       action = "pass";
       reason = "Banks before rolling too few dice.";

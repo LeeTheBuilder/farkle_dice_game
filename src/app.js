@@ -72,6 +72,10 @@
     );
   }
 
+  function isTargetReached() {
+    return game && game.players.some((player) => player.score >= game.targetScore);
+  }
+
   function clearAiTimer() {
     if (aiTimerId) {
       clearTimeout(aiTimerId);
@@ -210,9 +214,17 @@
     const player = game.players[game.activePlayerIndex];
     const passScore = player.score + game.turnScore + (selection.valid ? selection.score : 0);
 
-    matchTarget.textContent = isAiMatch()
-      ? `First to ${formatScore(game.targetScore)} vs AI`
-      : `First to ${formatScore(game.targetScore)}`;
+    if (game.phase === Rules.PHASES.GAME_OVER) {
+      matchTarget.textContent = "Match complete";
+    } else if (isTargetReached()) {
+      matchTarget.textContent = isAiMatch()
+        ? `Final round vs AI`
+        : "Final round";
+    } else {
+      matchTarget.textContent = isAiMatch()
+        ? `First to ${formatScore(game.targetScore)} vs AI`
+        : `First to ${formatScore(game.targetScore)}`;
+    }
     currentPlayer.textContent = player.name;
     turnScore.textContent = formatScore(game.turnScore);
     selectedScore.textContent = selection.valid ? formatScore(selection.score) : "0";
