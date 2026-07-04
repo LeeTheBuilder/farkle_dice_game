@@ -23,9 +23,6 @@
   const targetInput = document.querySelector("#targetScore");
   const targetButtons = Array.from(document.querySelectorAll("[data-target-choice]"));
   const musicButton = document.querySelector("#musicButton");
-  const trackButton = document.querySelector("#trackButton");
-  const trackInput = document.querySelector("#trackInput");
-  const trackName = document.querySelector("#trackName");
   const newMatchButton = document.querySelector("#newMatchButton");
   const scoreboard = document.querySelector("#scoreboard");
   const matchTarget = document.querySelector("#matchTarget");
@@ -102,9 +99,6 @@
     musicButton.setAttribute("aria-pressed", String(playing));
     musicButton.dataset.active = String(playing);
 
-    if (trackName) {
-      trackName.textContent = tavernMusic.getSourceLabel();
-    }
   }
 
   function setPanelVisibility() {
@@ -414,25 +408,6 @@
     updateMusicButton();
   }
 
-  function chooseTrack() {
-    trackInput.click();
-  }
-
-  async function useSelectedTrack() {
-    const file = trackInput.files && trackInput.files[0];
-    if (!file || !tavernMusic) {
-      return;
-    }
-
-    try {
-      await tavernMusic.setFile(file);
-    } catch (error) {
-      musicButton.textContent = "Track Blocked";
-    }
-
-    updateMusicButton();
-  }
-
   targetButtons.forEach((button) => {
     button.addEventListener("click", () => {
       targetInput.value = button.dataset.targetChoice;
@@ -464,8 +439,6 @@
 
   setupForm.addEventListener("submit", startMatch);
   musicButton.addEventListener("click", toggleMusic);
-  trackButton.addEventListener("click", chooseTrack);
-  trackInput.addEventListener("change", useSelectedTrack);
   newMatchButton.addEventListener("click", resetMatch);
   continueButton.addEventListener("click", scoreContinue);
   passButton.addEventListener("click", scorePass);

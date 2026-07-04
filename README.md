@@ -24,8 +24,6 @@ The AI is rule-based and runs entirely in the browser. It picks the highest-scor
 
 The Music button starts an original browser-generated medieval-style loop with drone, plucked melody, and soft drum accents.
 
-For a real audio track, start a match, click **Choose Track**, and select a local `.mp3`, `.m4a`, `.wav`, or `.ogg` file. The game will loop that local file with the same **Music On/Off** button. Bring your own file that you are allowed to use; the app does not download, rip, or bundle music from YouTube.
-
 ## Rules in This Version
 
 - Six standard dice.

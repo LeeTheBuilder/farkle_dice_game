@@ -373,29 +373,13 @@ h1 {
 }
 
 .music-controls {
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 8px;
-  align-items: center;
+  display: flex;
 }
 
 .music-button[data-active="true"] {
   color: #1a110b;
   background: linear-gradient(180deg, var(--brass-bright), var(--brass));
   border-color: #9f7930;
-}
-
-.track-name {
-  grid-column: 1 / -1;
-  max-width: 230px;
-  color: rgba(247, 239, 220, 0.72);
-  font-family: "Avenir Next Condensed", "Trebuchet MS", sans-serif;
-  font-size: 0.78rem;
-  font-weight: 800;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 
 .scoreboard {
@@ -780,15 +764,6 @@ h1 {
   .match-actions {
     display: grid;
     grid-template-columns: 1fr;
-  }
-
-  .music-controls {
-    grid-template-columns: 1fr;
-  }
-
-  .track-name {
-    max-width: none;
-    text-align: center;
   }
 
   .dice-tray {
