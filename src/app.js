@@ -45,6 +45,7 @@
   const rollNumber = document.querySelector("#rollNumber");
   const messageBanner = document.querySelector("#messageBanner");
   const ledgerPanel = document.querySelector(".ledger-panel");
+  const feltTable = document.querySelector(".felt-table");
   const diceTray = document.querySelector("#diceTray");
   const selectionNote = document.querySelector("#selectionNote");
   const continueButton = document.querySelector("#continueButton");
@@ -244,6 +245,7 @@
   function setPanelVisibility() {
     setupPanel.hidden = Boolean(game);
     gamePanel.hidden = !game;
+    document.body.dataset.view = game ? "game" : "setup";
   }
 
   function getRollValues() {
@@ -368,6 +370,9 @@
   function renderTurnLedger(selection) {
     const player = game.players[game.activePlayerIndex];
     const passScore = player.score + game.turnScore + (selection.valid ? selection.score : 0);
+    applyPlayerColor(document.body, game.activePlayerIndex);
+    applyPlayerColor(gamePanel, game.activePlayerIndex);
+    applyPlayerColor(feltTable, game.activePlayerIndex);
     applyPlayerColor(ledgerPanel, game.activePlayerIndex);
 
     if (game.phase === Rules.PHASES.GAME_OVER) {
