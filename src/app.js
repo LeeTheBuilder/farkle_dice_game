@@ -267,6 +267,12 @@
     selectedIndexes.clear();
   }
 
+  function scrollToAppTop() {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+  }
+
   function setSelection(indexes) {
     selectedIndexes.clear();
     indexes.forEach((index) => selectedIndexes.add(index));
@@ -450,6 +456,7 @@
     });
 
     render();
+    scrollToAppTop();
   }
 
   function resetMatch() {
@@ -458,6 +465,7 @@
     game = null;
     clearSelection();
     render();
+    scrollToAppTop();
   }
 
   function scoreContinue() {
