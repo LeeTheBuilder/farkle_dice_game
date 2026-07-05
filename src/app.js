@@ -13,6 +13,8 @@
   const ROLL_SETTLE_MS = 160;
   let game = null;
   let matchMode = "human";
+  let localPlayerCount = Rules.MIN_PLAYERS;
+  let localPlayerNames = Rules.DEFAULT_PLAYER_NAMES.slice();
   let aiTimerId = null;
   let aiActionInFlight = false;
   let activeRollKey = "";
@@ -22,10 +24,13 @@
   const setupPanel = document.querySelector("#setupPanel");
   const gamePanel = document.querySelector("#gamePanel");
   const setupForm = document.querySelector("#setupForm");
-  const playerOneInput = document.querySelector("#playerOne");
-  const playerTwoLabelText = document.querySelector("#playerTwoLabelText");
-  const playerTwoInput = document.querySelector("#playerTwo");
   const modeInputs = Array.from(document.querySelectorAll("input[name='opponentMode']"));
+  const playerCountSet = document.querySelector("#playerCountSet");
+  const playerCountButtons = Array.from(document.querySelectorAll("[data-player-count]"));
+  const playerRoster = document.querySelector("#playerRoster");
+  const aiRoster = document.querySelector("#aiRoster");
+  const aiHumanNameInput = document.querySelector("#aiHumanName");
+  const aiNameInput = document.querySelector("#aiName");
   const targetInput = document.querySelector("#targetScore");
   const targetButtons = Array.from(document.querySelectorAll("[data-target-choice]"));
   const musicButton = document.querySelector("#musicButton");
@@ -39,6 +44,7 @@
   const diceCount = document.querySelector("#diceCount");
   const rollNumber = document.querySelector("#rollNumber");
   const messageBanner = document.querySelector("#messageBanner");
+  const ledgerPanel = document.querySelector(".ledger-panel");
   const diceTray = document.querySelector("#diceTray");
   const selectionNote = document.querySelector("#selectionNote");
   const continueButton = document.querySelector("#continueButton");
@@ -59,13 +65,83 @@
     6: ["top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"],
   };
 
+  const playerColors = [
+    { accent: "#f1cf78", deep: "#8f6b2a", soft: "rgba(241, 207, 120, 0.26)" },
+    { accent: "#8cc7a1", deep: "#246a4a", soft: "rgba(140, 199, 161, 0.24)" },
+    { accent: "#d9796f", deep: "#82313a", soft: "rgba(217, 121, 111, 0.24)" },
+    { accent: "#91a8e8", deep: "#405382", soft: "rgba(145, 168, 232, 0.24)" },
+    { accent: "#d7a3d8", deep: "#704478", soft: "rgba(215, 163, 216, 0.24)" },
+    { accent: "#e0a35c", deep: "#8b5627", soft: "rgba(224, 163, 92, 0.24)" },
+  ];
+
   function formatScore(value) {
     return Number(value).toLocaleString("en-AU");
+  }
+
+  function getPlayerColor(index) {
+    return playerColors[index % playerColors.length];
+  }
+
+  function applyPlayerColor(element, index) {
+    const color = getPlayerColor(index);
+    element.style.setProperty("--player-color", color.accent);
+    element.style.setProperty("--player-color-deep", color.deep);
+    element.style.setProperty("--player-color-soft", color.soft);
+  }
+
+  function clampPlayerCount(value) {
+    const numeric = Number(value);
+    if (!Number.isInteger(numeric)) {
+      return Rules.MIN_PLAYERS;
+    }
+
+    return Math.max(Rules.MIN_PLAYERS, Math.min(Rules.MAX_PLAYERS, numeric));
+  }
+
+  function readLocalPlayerNames() {
+    playerRoster.querySelectorAll("[data-player-name-input]").forEach((input) => {
+      const index = Number(input.dataset.playerNameInput);
+      localPlayerNames[index] = input.value;
+    });
+  }
+
+  function getLocalPlayerNames() {
+    readLocalPlayerNames();
+    return localPlayerNames.slice(0, localPlayerCount);
   }
 
   function getSelectedMode() {
     const selectedMode = modeInputs.find((input) => input.checked);
     return selectedMode ? selectedMode.value : "human";
+  }
+
+  function renderPlayerRoster() {
+    playerRoster.innerHTML = "";
+
+    for (let index = 0; index < localPlayerCount; index += 1) {
+      const label = document.createElement("label");
+      const labelText = document.createElement("span");
+      const swatch = document.createElement("span");
+      const input = document.createElement("input");
+
+      label.className = "field-label player-name-field";
+      applyPlayerColor(label, index);
+
+      labelText.className = "player-name-label";
+      swatch.className = "player-swatch";
+      swatch.setAttribute("aria-hidden", "true");
+      labelText.append(swatch, `Player ${index + 1}`);
+
+      input.type = "text";
+      input.name = `player${index + 1}`;
+      input.value = localPlayerNames[index] || Rules.DEFAULT_PLAYER_NAMES[index] || `Player ${index + 1}`;
+      input.maxLength = 24;
+      input.autocomplete = "off";
+      input.dataset.playerNameInput = String(index);
+
+      label.append(labelText, input);
+      playerRoster.append(label);
+    }
   }
 
   function isAiMatch() {
@@ -205,10 +281,15 @@
       item.dataset.active = String(index === game.activePlayerIndex && game.phase !== Rules.PHASES.GAME_OVER);
       item.dataset.winner = String(index === game.winnerIndex);
       item.dataset.ai = String(isAiMatch() && index === AI_PLAYER_INDEX);
+      applyPlayerColor(item, index);
 
       const name = document.createElement("span");
       name.className = "score-name";
-      name.textContent = player.name;
+
+      const swatch = document.createElement("span");
+      swatch.className = "player-swatch";
+      swatch.setAttribute("aria-hidden", "true");
+      name.append(swatch, player.name);
 
       if (isAiMatch() && index === AI_PLAYER_INDEX) {
         const badge = document.createElement("em");
@@ -281,6 +362,7 @@
   function renderTurnLedger(selection) {
     const player = game.players[game.activePlayerIndex];
     const passScore = player.score + game.turnScore + (selection.valid ? selection.score : 0);
+    applyPlayerColor(ledgerPanel, game.activePlayerIndex);
 
     if (game.phase === Rules.PHASES.GAME_OVER) {
       matchTarget.textContent = "Match complete";
@@ -330,6 +412,7 @@
 
     winnerPanel.hidden = game.phase !== Rules.PHASES.GAME_OVER;
     if (game.phase === Rules.PHASES.GAME_OVER) {
+      applyPlayerColor(winnerPanel, game.winnerIndex);
       winnerText.textContent = `${game.players[game.winnerIndex].name} wins the table.`;
     }
   }
@@ -360,10 +443,9 @@
     matchMode = getSelectedMode();
 
     game = Rules.createGame({
-      playerNames: [
-        playerOneInput.value,
-        isAiMatch() ? playerTwoInput.value || "Tavern AI" : playerTwoInput.value,
-      ],
+      playerNames: isAiMatch()
+        ? [aiHumanNameInput.value, aiNameInput.value || "Tavern AI"]
+        : getLocalPlayerNames(),
       targetScore: targetInput.value,
     });
 
@@ -466,15 +548,18 @@
   function updateOpponentModeUi() {
     const mode = getSelectedMode();
     const aiMode = mode === "ai";
-    const currentSecondName = playerTwoInput.value.trim();
+    readLocalPlayerNames();
 
     setupPanel.dataset.mode = mode;
-    playerTwoLabelText.textContent = aiMode ? "AI name" : "Player two";
+    playerCountSet.hidden = aiMode;
+    playerRoster.hidden = aiMode;
+    aiRoster.hidden = !aiMode;
 
-    if (aiMode && (!currentSecondName || currentSecondName === "Theresa")) {
-      playerTwoInput.value = "Tavern AI";
-    } else if (!aiMode && currentSecondName === "Tavern AI") {
-      playerTwoInput.value = "Theresa";
+    if (aiMode && !aiHumanNameInput.value.trim()) {
+      aiHumanNameInput.value = localPlayerNames[0] || Rules.DEFAULT_PLAYER_NAMES[0];
+    } else if (!aiMode && aiHumanNameInput.value.trim()) {
+      localPlayerNames[0] = aiHumanNameInput.value;
+      renderPlayerRoster();
     }
   }
 
@@ -500,6 +585,26 @@
         targetButton.dataset.active = String(targetButton === button);
       });
     });
+  });
+
+  playerCountButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      readLocalPlayerNames();
+      localPlayerCount = clampPlayerCount(button.dataset.playerCount);
+      playerCountButtons.forEach((countButton) => {
+        countButton.dataset.active = String(countButton === button);
+      });
+      renderPlayerRoster();
+    });
+  });
+
+  playerRoster.addEventListener("input", (event) => {
+    if (!event.target.matches("[data-player-name-input]")) {
+      return;
+    }
+
+    const index = Number(event.target.dataset.playerNameInput);
+    localPlayerNames[index] = event.target.value;
   });
 
   modeInputs.forEach((input) => {
@@ -537,6 +642,7 @@
   });
 
   updateOpponentModeUi();
+  renderPlayerRoster();
   updateMusicButton();
   render();
 })();

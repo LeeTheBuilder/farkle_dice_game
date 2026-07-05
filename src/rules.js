@@ -10,6 +10,9 @@
   "use strict";
 
   const DEFAULT_TARGET_SCORE = 4000;
+  const MIN_PLAYERS = 2;
+  const MAX_PLAYERS = 6;
+  const DEFAULT_PLAYER_NAMES = ["Henry", "Theresa", "Hans", "Katherine", "Radzig", "Zbyshek"];
   const PHASES = {
     SELECTING: "selecting",
     BUST: "bust",
@@ -369,8 +372,10 @@
 
   function sanitizePlayerNames(playerNames) {
     const names = Array.isArray(playerNames) ? playerNames : [];
-    return [0, 1].map((index) => {
-      const fallback = `Player ${index + 1}`;
+    const playerCount = Math.max(MIN_PLAYERS, Math.min(MAX_PLAYERS, names.length || MIN_PLAYERS));
+
+    return Array.from({ length: playerCount }, (_, index) => {
+      const fallback = DEFAULT_PLAYER_NAMES[index] || `Player ${index + 1}`;
       const value = String(names[index] || fallback).trim();
       return value || fallback;
     });
@@ -403,8 +408,8 @@
     return state.players[state.activePlayerIndex];
   }
 
-  function switchPlayerIndex(index) {
-    return index === 0 ? 1 : 0;
+  function nextPlayerIndex(state, index) {
+    return (index + 1) % state.players.length;
   }
 
   function hasTargetScore(players, targetScore) {
@@ -550,7 +555,7 @@
       });
     }
 
-    const nextActivePlayerIndex = switchPlayerIndex(state.activePlayerIndex);
+    const nextActivePlayerIndex = nextPlayerIndex(state, state.activePlayerIndex);
     const targetReached = hasTargetScore(players, state.targetScore);
     const tiedAfterRound = targetReached && isEndOfRound(state, state.activePlayerIndex) && getLeaderIndex(players) === null;
     const nextState = Object.assign({}, state, {
@@ -566,7 +571,7 @@
       message: tiedAfterRound
         ? `${players[state.activePlayerIndex].name} banks ${formatScore(banked)}. The table is tied; another round begins.`
         : targetReached
-          ? `${players[state.activePlayerIndex].name} banks ${formatScore(banked)}. ${players[nextActivePlayerIndex].name} gets the final turn.`
+          ? `${players[state.activePlayerIndex].name} banks ${formatScore(banked)}. Final round continues with ${players[nextActivePlayerIndex].name}.`
           : `${players[state.activePlayerIndex].name} banks ${formatScore(banked)}. ${players[nextActivePlayerIndex].name} rolls.`,
     });
   }
@@ -583,7 +588,7 @@
       });
     }
 
-    const nextActivePlayerIndex = switchPlayerIndex(state.activePlayerIndex);
+    const nextActivePlayerIndex = nextPlayerIndex(state, state.activePlayerIndex);
     const targetReached = hasTargetScore(state.players, state.targetScore);
     const tiedAfterRound = targetReached && isEndOfRound(state, state.activePlayerIndex) && getLeaderIndex(state.players) === null;
     const nextState = Object.assign({}, state, {
@@ -597,7 +602,7 @@
       message: tiedAfterRound
         ? `The table is tied; another round begins. ${state.players[nextActivePlayerIndex].name} rolls.`
         : targetReached
-          ? `${state.players[nextActivePlayerIndex].name} gets the final turn.`
+          ? `Final round continues with ${state.players[nextActivePlayerIndex].name}.`
           : `${state.players[nextActivePlayerIndex].name} rolls.`,
     });
   }
@@ -647,7 +652,7 @@
 
     const selection = selections[0];
     const player = activePlayer(state);
-    const opponent = state.players[switchPlayerIndex(state.activePlayerIndex)];
+    const opponent = state.players[nextPlayerIndex(state, state.activePlayerIndex)];
     const turnTotal = state.turnScore + selection.score;
     const totalIfPassed = player.score + turnTotal;
     const usedAllDice = selection.selectedIndexes.length === state.dice.length;
@@ -699,6 +704,9 @@
 
   return {
     DEFAULT_TARGET_SCORE,
+    DEFAULT_PLAYER_NAMES,
+    MAX_PLAYERS,
+    MIN_PLAYERS,
     PHASES,
     acknowledgeBust,
     chooseAiMove,

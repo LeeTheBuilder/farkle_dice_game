@@ -13,7 +13,7 @@
         <div class="setup-copy">
           <p class="eyebrow">Local hot-seat dice</p>
           <h1 id="setupTitle">Farkle Dice Game</h1>
-          <p class="setup-line">Core KCD2-style scoring for two players or a local AI opponent.</p>
+          <p class="setup-line">Core KCD2-style scoring for 2-6 local players or a local AI opponent.</p>
         </div>
 
         <form class="setup-form" id="setupForm">
@@ -22,7 +22,7 @@
             <div class="mode-options">
               <label>
                 <input type="radio" name="opponentMode" value="human" checked>
-                <span>Two Players</span>
+                <span>Local Players</span>
               </label>
               <label>
                 <input type="radio" name="opponentMode" value="ai">
@@ -31,15 +31,30 @@
             </div>
           </fieldset>
 
-          <label class="field-label">
-            Player one
-            <input id="playerOne" name="playerOne" type="text" value="Henry" maxlength="24" autocomplete="off">
-          </label>
+          <fieldset class="player-count-set" id="playerCountSet">
+            <legend>Players</legend>
+            <div class="player-count-options" id="playerCountOptions">
+              <button type="button" data-player-count="2" data-active="true">2</button>
+              <button type="button" data-player-count="3">3</button>
+              <button type="button" data-player-count="4">4</button>
+              <button type="button" data-player-count="5">5</button>
+              <button type="button" data-player-count="6">6</button>
+            </div>
+          </fieldset>
 
-          <label class="field-label">
-            <span id="playerTwoLabelText">Player two</span>
-            <input id="playerTwo" name="playerTwo" type="text" value="Theresa" maxlength="24" autocomplete="off">
-          </label>
+          <div class="player-roster" id="playerRoster" aria-label="Local player names"></div>
+
+          <div class="ai-roster" id="aiRoster" hidden>
+            <label class="field-label">
+              Player
+              <input id="aiHumanName" name="aiHumanName" type="text" value="Henry" maxlength="24" autocomplete="off">
+            </label>
+
+            <label class="field-label">
+              AI name
+              <input id="aiName" name="aiName" type="text" value="Tavern AI" maxlength="24" autocomplete="off">
+            </label>
+          </div>
 
           <fieldset class="target-set">
             <legend>Target score</legend>
